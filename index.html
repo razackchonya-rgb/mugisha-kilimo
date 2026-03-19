@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mugisha Kilimo — Agricultural Technology Blog</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #0d1f0a; --ink-soft: #2d4a28; --ink-muted: #7a9470;
+      --surface: #f2f7f0; --white: #ffffff;
+      --accent: #1e7e34; --accent-light: #e6f4ea;
+      --accent2: #e67e22; --gold: #f0a500;
+      --border: #d4e8ce;
+      --card-shadow: 0 2px 12px rgba(13,31,10,0.07), 0 1px 3px rgba(13,31,10,0.05);
+      --card-shadow-hover: 0 8px 32px rgba(13,31,10,0.13), 0 2px 8px rgba(13,31,10,0.07);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--white); color: var(--ink); line-height: 1.6; overflow-x: hidden; }
+
+    /* ADMIN LOGIN */
+    #admin-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(13,31,10,0.88); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+    #admin-modal.open { display:flex; }
+    .admin-login-box { background:#0f1e0c; border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:44px 40px; width:100%; max-width:380px; box-shadow:0 24px 80px rgba(0,0,0,0.6); text-align:center; animation:popIn .35s ease; }
+    @keyframes popIn { from{opacity:0;transform:scale(0.93) translateY(16px);}to{opacity:1;transform:scale(1) translateY(0);} }
+    .alb-logo { font-family:'DM Serif Display',serif; font-size:1.3rem; color:#fff; margin-bottom:4px; }
+    .alb-sub { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:#3a5a34; letter-spacing:.1em; margin-bottom:32px; }
+    .alb-label { display:block; text-align:left; font-size:0.72rem; font-weight:500; color:#7a9470; letter-spacing:.06em; text-transform:uppercase; margin-bottom:7px; }
+    .alb-input { width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:12px 15px; font-size:0.92rem; color:#fff; font-family:'DM Sans',sans-serif; outline:none; margin-bottom:16px; transition:border-color .2s; }
+    .alb-input:focus { border-color:var(--accent); }
+    .alb-btn { width:100%; background:var(--accent); color:#fff; border:none; border-radius:9px; padding:13px; font-size:0.92rem; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:transform .2s,box-shadow .2s; }
+    .alb-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(30,126,52,.4); }
+    .alb-cancel { margin-top:14px; font-size:0.78rem; color:#3a5a34; cursor:pointer; }
+    .alb-cancel:hover { color:#7a9470; }
+    .alb-error { display:none; margin-top:12px; background:rgba(255,60,90,.12); border:1px solid rgba(255,60,90,.3); border-radius:8px; padding:9px; font-size:0.8rem; color:#ff3c5a; }
+
+    /* ADMIN PANEL */
+    #admin-panel { display:none; position:fixed; inset:0; z-index:9000; background:#0a1408; overflow-y:auto; }
+    #admin-panel.open { display:block; }
+    .ap-nav { background:#0f1e0c; border-bottom:1px solid rgba(255,255,255,0.07); display:flex; align-items:center; justify-content:space-between; padding:0 32px; height:60px; position:sticky; top:0; z-index:10; }
+    .ap-nav-logo { font-family:'DM Serif Display',serif; font-size:1.1rem; color:#fff; display:flex; align-items:center; gap:8px; }
+    .ap-nav-logo .dot { width:7px; height:7px; background:var(--accent); border-radius:50%; }
+    .ap-nav-right { display:flex; gap:12px; }
+    .ap-btn { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:7px; padding:7px 16px; font-size:0.82rem; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .2s; }
+    .ap-btn:hover { background:rgba(255,255,255,0.13); }
+    .ap-btn.danger { color:#ff3c5a; border-color:rgba(255,60,90,.3); }
+    .ap-body { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 60px); }
+    .ap-sidebar { background:#0f1e0c; border-right:1px solid rgba(255,255,255,0.07); padding:24px 0; }
+    .ap-sidebar-label { font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:#3a5a34; letter-spacing:.12em; text-transform:uppercase; padding:0 20px; margin-bottom:8px; margin-top:20px; }
+    .ap-sidebar-item { display:flex; align-items:center; gap:10px; padding:10px 20px; cursor:pointer; font-size:0.85rem; color:#7a9470; transition:background .15s,color .15s; border-left:3px solid transparent; }
+    .ap-sidebar-item:hover { background:rgba(255,255,255,0.04); color:#fff; }
+    .ap-sidebar-item.active { background:rgba(30,126,52,0.15); color:#fff; border-left-color:var(--accent); }
+    .ap-content { padding:36px 40px; }
+    .ap-page { display:none; } .ap-page.active { display:block; }
+    .ap-page-title { font-family:'DM Serif Display',serif; font-size:1.8rem; color:#fff; margin-bottom:6px; }
+    .ap-page-sub { font-size:0.83rem; color:#3a5a34; margin-bottom:32px; }
+    .ap-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+    .ap-stat { background:#0f1e0c; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:20px; }
+    .ap-stat-num { font-family:'DM Serif Display',serif; font-size:2rem; color:#fff; }
+    .ap-stat-num span { color:#4caf50; }
+    .ap-stat-label { font-size:0.75rem; color:#3a5a34; margin-top:4px; }
+    .ap-posts-list { display:flex; flex-direction:column; gap:12px; }
+    .ap-post-row { background:#0f1e0c; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .ap-post-row-info { flex:1; }
+    .ap-post-row-title { font-weight:600; color:#fff; font-size:0.92rem; margin-bottom:4px; }
+    .ap-post-row-meta { font-size:0.75rem; color:#3a5a34; display:flex; gap:14px; align-items:center; }
+    .ap-post-row-tag { font-family:'JetBrains Mono',monospace; font-size:0.65rem; background:rgba(30,126,52,0.2); color:#4caf50; padding:2px 8px; border-radius:4px; }
+    .ap-post-actions { display:flex; gap:8px; }
+    .ap-icon-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); color:#7a9470; border-radius:7px; padding:6px 12px; font-size:0.78rem; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+    .ap-icon-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+    .ap-icon-btn.del:hover { background:rgba(255,60,90,0.15); border-color:rgba(255,60,90,0.3); color:#ff3c5a; }
+    .ap-editor { display:flex; flex-direction:column; gap:16px; }
+    .ap-field-label { font-size:0.75rem; font-weight:500; color:#7a9470; letter-spacing:.06em; text-transform:uppercase; margin-bottom:7px; display:block; }
+    .ap-input,.ap-select,.ap-textarea { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:12px 16px; font-size:0.9rem; color:#fff; font-family:'DM Sans',sans-serif; outline:none; transition:border-color .2s; }
+    .ap-input:focus,.ap-select:focus,.ap-textarea:focus { border-color:var(--accent); }
+    .ap-select { cursor:pointer; } .ap-select option { background:#0f1e0c; }
+    .ap-textarea { min-height:260px; resize:vertical; line-height:1.7; }
+    .ap-editor-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .ap-editor-actions { display:flex; gap:12px; margin-top:8px; }
+    .ap-save-btn { background:var(--accent); color:#fff; border:none; border-radius:9px; padding:12px 28px; font-size:0.9rem; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; transition:transform .2s,box-shadow .2s; }
+    .ap-save-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(30,126,52,.4); }
+    .ap-discard-btn { background:transparent; color:#7a9470; border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:12px 22px; font-size:0.9rem; font-family:'DM Sans',sans-serif; cursor:pointer; }
+    .ap-success-toast { display:none; background:rgba(30,126,52,0.15); border:1px solid rgba(30,126,52,0.3); border-radius:8px; padding:10px 16px; font-size:0.82rem; color:#4caf50; margin-top:12px; }
+    .ap-settings { display:flex; flex-direction:column; gap:20px; max-width:560px; }
+    .ap-setting-group { background:#0f1e0c; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:24px; }
+    .ap-setting-group h3 { font-size:0.95rem; color:#fff; margin-bottom:16px; font-weight:600; }
+    .ap-setting-row { margin-bottom:14px; }
+
+    /* PUBLIC NAV */
+    nav { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(255,255,255,0.94); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 5vw; height:64px; }
+    .nav-logo { font-family:'DM Serif Display',serif; font-size:1.4rem; color:var(--ink); text-decoration:none; display:flex; align-items:center; gap:8px; }
+    .nav-logo .dot { width:8px; height:8px; background:var(--accent); border-radius:50%; display:inline-block; }
+    .nav-links { display:flex; gap:32px; list-style:none; }
+    .nav-links a { text-decoration:none; color:var(--ink-soft); font-size:0.88rem; font-weight:500; transition:color .2s; }
+    .nav-links a:hover { color:var(--accent); }
+    .nav-right { display:flex; align-items:center; gap:10px; }
+    .nav-cta { background:var(--accent); color:#fff; border:none; border-radius:6px; padding:8px 20px; font-size:0.85rem; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .2s,transform .15s; }
+    .nav-cta:hover { background:#155d27; transform:translateY(-1px); }
+    #admin-entry-btn { background:transparent; color:var(--ink-muted); border:1px solid var(--border); border-radius:6px; padding:7px 14px; font-size:0.78rem; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+    #admin-entry-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* HERO */
+    .hero { min-height:100vh; display:grid; grid-template-columns:1fr 1fr; align-items:center; padding:100px 5vw 60px; gap:60px; position:relative; overflow:hidden; }
+    .hero::before { content:''; position:absolute; top:-200px; right:-200px; width:700px; height:700px; background:radial-gradient(circle,#e6f4ea 0%,transparent 70%); border-radius:50%; pointer-events:none; }
+    .hero-eyebrow { font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--accent); letter-spacing:.15em; text-transform:uppercase; margin-bottom:20px; opacity:0; animation:fadeUp .7s .1s forwards; }
+    .hero h1 { font-family:'DM Serif Display',serif; font-size:clamp(2.8rem,5vw,4.2rem); line-height:1.12; color:var(--ink); margin-bottom:24px; opacity:0; animation:fadeUp .7s .25s forwards; }
+    .hero h1 em { font-style:italic; color:var(--accent); }
+    .hero-desc { font-size:1.05rem; color:var(--ink-soft); max-width:460px; margin-bottom:40px; line-height:1.75; opacity:0; animation:fadeUp .7s .4s forwards; }
+    .hero-actions { display:flex; gap:14px; align-items:center; opacity:0; animation:fadeUp .7s .55s forwards; }
+    .btn-primary { background:var(--accent); color:#fff; border:none; border-radius:7px; padding:13px 28px; font-size:0.92rem; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:transform .2s,box-shadow .2s; text-decoration:none; display:inline-block; }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(30,126,52,.3); }
+    .btn-ghost { background:transparent; color:var(--ink); border:1.5px solid var(--border); border-radius:7px; padding:12px 28px; font-size:0.92rem; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:border-color .2s,color .2s; text-decoration:none; display:inline-block; }
+    .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+    .hero-visual { position:relative; opacity:0; animation:fadeLeft .8s .4s forwards; }
+    .hero-card-stack { position:relative; height:420px; }
+    .hcard { position:absolute; background:var(--white); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:var(--card-shadow); transition:transform .3s; }
+    .hcard:nth-child(1){width:340px;top:0;left:20px;z-index:3;transform:rotate(-1deg);}
+    .hcard:nth-child(2){width:310px;top:60px;left:60px;z-index:2;transform:rotate(2deg);opacity:.85;}
+    .hcard:nth-child(3){width:290px;top:120px;left:90px;z-index:1;transform:rotate(4deg);opacity:.6;}
+    .hero-visual:hover .hcard:nth-child(1){transform:rotate(0deg) translateY(-6px);}
+    .hero-visual:hover .hcard:nth-child(2){transform:rotate(1deg) translateX(10px);}
+    .hero-visual:hover .hcard:nth-child(3){transform:rotate(2deg) translateX(20px);}
+    .hcard-tag { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--accent); background:var(--accent-light); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:12px; }
+    .hcard h3 { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--ink); margin-bottom:8px; }
+    .hcard p { font-size:0.82rem; color:var(--ink-muted); line-height:1.6; }
+    .hcard-meta { display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+    .avatar { width:26px; height:26px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:white; font-weight:600; }
+    .hcard-meta span { font-size:0.75rem; color:var(--ink-muted); }
+
+    /* STATS */
+    .stats-strip { background:var(--ink); padding:28px 5vw; display:flex; justify-content:center; gap:80px; }
+    .stat { text-align:center; }
+    .stat-num { font-family:'DM Serif Display',serif; font-size:2rem; color:#fff; }
+    .stat-num span { color:#4caf50; }
+    .stat-label { font-size:0.78rem; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.1em; margin-top:4px; }
+
+    /* POSTS */
+    section { padding:90px 5vw; }
+    .section-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:50px; }
+    .section-label { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--accent); letter-spacing:.15em; text-transform:uppercase; margin-bottom:8px; }
+    .section-title { font-family:'DM Serif Display',serif; font-size:clamp(1.8rem,3vw,2.4rem); color:var(--ink); }
+    .section-link { font-size:0.85rem; color:var(--accent); text-decoration:none; font-weight:500; border-bottom:1px solid var(--accent-light); padding-bottom:2px; }
+    .posts-grid { display:grid; grid-template-columns:1.5fr 1fr 1fr; grid-template-rows:auto auto; gap:24px; }
+    .post-card { background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:box-shadow .25s,transform .25s; cursor:pointer; }
+    .post-card:hover { box-shadow:var(--card-shadow-hover); transform:translateY(-4px); }
+    .post-card.featured { grid-row:span 2; display:flex; flex-direction:column; }
+    .post-img { width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+    .post-card.featured .post-img { aspect-ratio:4/3; }
+    .post-img::after { content:''; position:absolute; inset:0; background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.25)); }
+    .post-img-icon { position:relative; z-index:1; font-size:2.5rem; }
+    .post-body { padding:22px; flex:1; display:flex; flex-direction:column; }
+    .post-tag { font-family:'JetBrains Mono',monospace; font-size:0.66rem; font-weight:500; color:var(--accent); background:var(--accent-light); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:12px; }
+    .post-tag.orange { color:#c0620a; background:#fef0e6; }
+    .post-tag.blue { color:#1565c0; background:#e3f0ff; }
+    .post-title { font-family:'DM Serif Display',serif; font-size:1.15rem; line-height:1.3; color:var(--ink); margin-bottom:10px; }
+    .post-card.featured .post-title { font-size:1.45rem; }
+    .post-excerpt { font-size:0.83rem; color:var(--ink-muted); line-height:1.7; flex:1; }
+    .post-footer { display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+    .post-author { display:flex; align-items:center; gap:8px; }
+    .post-author .avatar { width:28px; height:28px; font-size:.72rem; }
+    .author-name { font-size:0.78rem; color:var(--ink-soft); font-weight:500; }
+    .post-date { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--ink-muted); }
+    .read-time { font-size:0.72rem; color:var(--ink-muted); }
+
+    /* ABOUT */
+    .about-section { background:var(--surface); padding:90px 5vw; }
+    .about-inner { display:grid; grid-template-columns:1fr 1.3fr; gap:80px; align-items:center; max-width:1100px; margin:0 auto; }
+    .about-photo-wrap { position:relative; }
+    .about-photo { width:100%; aspect-ratio:1; border-radius:20px; background:linear-gradient(145deg,#0d1f0a,#1e7e34); display:flex; align-items:center; justify-content:center; font-size:5rem; position:relative; overflow:hidden; }
+    .about-photo::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(30,126,52,.3),transparent); }
+    .about-badge { position:absolute; bottom:-12px; right:-12px; background:var(--white); border:2px solid var(--border); border-radius:12px; padding:12px 18px; box-shadow:var(--card-shadow); text-align:center; }
+    .about-badge strong { display:block; font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--ink); }
+    .about-badge span { font-size:0.72rem; color:var(--ink-muted); }
+    .about-content p { font-size:0.95rem; color:var(--ink-soft); line-height:1.8; margin-bottom:16px; }
+    .about-tags { display:flex; flex-wrap:wrap; gap:8px; margin:24px 0 32px; }
+    .about-tag { border:1.5px solid var(--border); border-radius:6px; padding:6px 14px; font-size:0.78rem; font-weight:500; color:var(--ink-soft); background:var(--white); transition:border-color .2s,color .2s; }
+    .about-tag:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* NEWSLETTER */
+    .newsletter-section { padding:90px 5vw; }
+    .newsletter-inner { background:var(--ink); border-radius:24px; padding:64px; display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; position:relative; overflow:hidden; max-width:1100px; margin:0 auto; }
+    .newsletter-inner::before { content:''; position:absolute; top:-100px; right:-100px; width:400px; height:400px; background:radial-gradient(circle,rgba(30,126,52,.2) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
+    .newsletter-label { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:#4caf50; letter-spacing:.15em; text-transform:uppercase; margin-bottom:14px; }
+    .newsletter-title { font-family:'DM Serif Display',serif; font-size:2.2rem; color:#fff; line-height:1.2; margin-bottom:16px; }
+    .newsletter-desc { font-size:0.92rem; color:#7a9470; line-height:1.75; }
+    .newsletter-perks { margin-top:28px; display:flex; flex-direction:column; gap:10px; }
+    .perk { display:flex; align-items:center; gap:10px; font-size:0.84rem; color:#b8cdb4; }
+    .perk-dot { width:6px; height:6px; background:#4caf50; border-radius:50%; flex-shrink:0; }
+    .form-card { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:36px; }
+    .form-card label { display:block; font-size:0.8rem; font-weight:500; color:#7a9470; margin-bottom:8px; }
+    .form-card input { width:100%; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:12px 16px; font-size:0.9rem; color:#fff; font-family:'DM Sans',sans-serif; margin-bottom:16px; outline:none; transition:border-color .2s; }
+    .form-card input::placeholder { color:rgba(255,255,255,.3); }
+    .form-card input:focus { border-color:var(--accent); }
+    .form-submit { width:100%; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:14px; font-size:0.92rem; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:transform .2s,box-shadow .2s; }
+    .form-submit:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(30,126,52,.4); }
+    .form-note { font-size:0.72rem; color:rgba(255,255,255,.3); text-align:center; margin-top:12px; }
+    .success-msg { display:none; background:rgba(30,126,52,.15); border:1px solid rgba(30,126,52,.3); border-radius:10px; padding:20px; text-align:center; color:#fff; font-size:0.9rem; margin-top:14px; }
+
+    /* FOOTER */
+    footer { border-top:1px solid var(--border); padding:40px 5vw; display:flex; justify-content:space-between; align-items:center; }
+    .footer-logo { font-family:'DM Serif Display',serif; font-size:1.2rem; color:var(--ink); text-decoration:none; display:flex; align-items:center; gap:6px; }
+    .footer-links { display:flex; gap:24px; }
+    .footer-links a { font-size:0.82rem; color:var(--ink-muted); text-decoration:none; transition:color .2s; }
+    .footer-links a:hover { color:var(--ink); }
+    .footer-copy { font-size:0.78rem; color:var(--ink-muted); }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);} }
+    @keyframes fadeLeft { from{opacity:0;transform:translateX(32px);}to{opacity:1;transform:translateX(0);} }
+    .reveal { opacity:0; transform:translateY(28px); transition:opacity .7s,transform .7s; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    @media(max-width:900px){
+      .hero{grid-template-columns:1fr;padding-top:120px;} .hero-visual{display:none;}
+      .posts-grid{grid-template-columns:1fr 1fr;} .post-card.featured{grid-row:auto;}
+      .about-inner{grid-template-columns:1fr;} .newsletter-inner{grid-template-columns:1fr;padding:40px 28px;}
+      .stats-strip{gap:40px;flex-wrap:wrap;} footer{flex-direction:column;gap:20px;text-align:center;}
+      .ap-body{grid-template-columns:1fr;} .ap-sidebar{display:none;} .ap-stats{grid-template-columns:1fr 1fr;}
+    }
+    @media(max-width:600px){ .posts-grid{grid-template-columns:1fr;} .nav-links{display:none;} }
+
+    /* ARTICLE MODAL */
+    #article-modal { display:none; position:fixed; inset:0; z-index:8000; background:rgba(13,31,10,0.7); backdrop-filter:blur(6px); overflow-y:auto; padding:40px 20px 60px; }
+    #article-modal.open { display:block; }
+    .am-inner { background:var(--white); border-radius:20px; max-width:760px; margin:0 auto; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.25); animation:popIn .3s ease; }
+    .am-hero { width:100%; height:280px; display:flex; align-items:center; justify-content:center; font-size:4rem; position:relative; }
+    .am-back { position:absolute; top:18px; left:18px; background:rgba(0,0,0,0.35); color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:0.82rem; cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:500; transition:background .2s; z-index:1; }
+    .am-back:hover { background:rgba(0,0,0,0.55); }
+    .am-body { padding:36px 44px 48px; }
+    .am-tag { font-family:'JetBrains Mono',monospace; font-size:0.68rem; font-weight:500; color:var(--accent); background:var(--accent-light); padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:16px; }
+    .am-title { font-family:'DM Serif Display',serif; font-size:clamp(1.6rem,4vw,2.2rem); line-height:1.2; color:var(--ink); margin-bottom:14px; }
+    .am-meta { display:flex; align-items:center; gap:14px; margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+    .am-meta .avatar { width:34px; height:34px; font-size:.82rem; flex-shrink:0; }
+    .am-meta-text .author-name { font-size:0.88rem; color:var(--ink-soft); font-weight:600; }
+    .am-meta-text .post-date { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--ink-muted); margin-top:2px; }
+    .am-read-time { margin-left:auto; font-size:0.78rem; color:var(--ink-muted); white-space:nowrap; }
+    .am-content { font-size:1rem; color:var(--ink-soft); line-height:1.85; white-space:pre-wrap; }
+    .am-content p { margin-bottom:1.2em; }
+    @media(max-width:600px){ .am-body{padding:24px 22px 36px;} .am-hero{height:200px;} }
+  </style>
+</head>
+<body>
+
+<div id="article-modal">
+  <div class="am-inner">
+    <div class="am-hero" id="am-hero">
+      <button class="am-back" onclick="closeArticle()">← Back to Blog</button>
+      <span id="am-icon">🌾</span>
+    </div>
+    <div class="am-body">
+      <span class="am-tag" id="am-tag"></span>
+      <h1 class="am-title" id="am-title"></h1>
+      <div class="am-meta">
+        <div class="avatar" id="am-avatar" style="background:var(--accent);">M</div>
+        <div class="am-meta-text">
+          <div class="author-name" id="am-author"></div>
+          <div class="post-date" id="am-date"></div>
+        </div>
+        <span class="am-read-time" id="am-read-time"></span>
+      </div>
+      <div class="am-content" id="am-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="admin-modal">
+  <div class="admin-login-box">
+    <div class="alb-logo">🌱 Admin Login</div>
+    <div class="alb-sub">// Mugisha Kilimo Dashboard</div>
+    <label class="alb-label">Password</label>
+    <input class="alb-input" type="password" id="alb-pw" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')adminLogin()"/>
+    <button class="alb-btn" onclick="adminLogin()">Enter Dashboard</button>
+    <div class="alb-error" id="alb-error">Wrong password. Try again.</div>
+    <div class="alb-cancel" onclick="closeAdminModal()">Back to blog</div>
+  </div>
+</div>
+
+<div id="admin-panel">
+  <div class="ap-nav">
+    <div class="ap-nav-logo"><span class="dot"></span> Mugisha Kilimo <span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#3a5a34;margin-left:8px;">// Admin</span></div>
+    <div class="ap-nav-right">
+      <button class="ap-btn" onclick="closeAdmin()">View Blog</button>
+      <button class="ap-btn danger" onclick="logoutAdmin()">Logout</button>
+    </div>
+  </div>
+  <div class="ap-body">
+    <div class="ap-sidebar">
+      <div class="ap-sidebar-label">Menu</div>
+      <div class="ap-sidebar-item active" onclick="showPage('dashboard',this)">Dashboard</div>
+      <div class="ap-sidebar-item" onclick="showPage('posts',this)">All Posts</div>
+      <div class="ap-sidebar-item" onclick="showPage('new-post',this);resetEditor()">New Post</div>
+      <div class="ap-sidebar-label">Config</div>
+      <div class="ap-sidebar-item" onclick="showPage('settings',this)">Settings</div>
+    </div>
+    <div class="ap-content">
+      <div class="ap-page active" id="page-dashboard">
+        <div class="ap-page-title">Dashboard</div>
+        <div class="ap-page-sub">Welcome back, Mugisha. Here is your AgriTech blog overview.</div>
+        <div class="ap-stats">
+          <div class="ap-stat"><div class="ap-stat-num" id="stat-posts">5</div><div class="ap-stat-label">Total Posts</div></div>
+          <div class="ap-stat"><div class="ap-stat-num">8<span>K</span></div><div class="ap-stat-label">Monthly Readers</div></div>
+          <div class="ap-stat"><div class="ap-stat-num">2<span>K</span></div><div class="ap-stat-label">Subscribers</div></div>
+          <div class="ap-stat"><div class="ap-stat-num">5<span>*</span></div><div class="ap-stat-label">Rating</div></div>
+        </div>
+        <div style="background:#0f1e0c;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:24px;">
+          <div style="font-size:.75rem;color:#3a5a34;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;">Recent Posts</div>
+          <div id="dash-recent-posts"></div>
+        </div>
+      </div>
+      <div class="ap-page" id="page-posts">
+        <div class="ap-page-title">All Posts</div>
+        <div class="ap-page-sub">Manage your published articles.</div>
+        <div class="ap-posts-list" id="all-posts-list"></div>
+      </div>
+      <div class="ap-page" id="page-new-post">
+        <div class="ap-page-title" id="editor-title">New Post</div>
+        <div class="ap-page-sub" id="editor-sub">Write and publish a new article.</div>
+        <div class="ap-editor">
+          <div><label class="ap-field-label">Post Title</label><input class="ap-input" id="inp-title" placeholder="Enter a compelling headline"/></div>
+          <div class="ap-editor-row">
+            <div><label class="ap-field-label">Category</label>
+              <select class="ap-select" id="inp-tag">
+                <option value="PRECISION FARMING">Precision Farming</option>
+                <option value="DRONES">Drones and Robotics</option>
+                <option value="SOIL SCIENCE">Soil Science</option>
+                <option value="IRRIGATION">Smart Irrigation</option>
+                <option value="AGRI-AI">Agri-AI</option>
+                <option value="FOOD TECH">Food Tech</option>
+                <option value="CLIMATE">Climate and Sustainability</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div><label class="ap-field-label">Reading Time (min)</label><input class="ap-input" id="inp-time" type="number" placeholder="5" min="1" max="60"/></div>
+          </div>
+          <div><label class="ap-field-label">Excerpt</label><input class="ap-input" id="inp-excerpt" placeholder="Short description shown on blog cards"/></div>
+          <div><label class="ap-field-label">Full Content</label><textarea class="ap-textarea" id="inp-content" placeholder="Write your full article here"></textarea></div>
+          <div><label class="ap-field-label">Icon (emoji)</label><input class="ap-input" id="inp-icon" placeholder="e.g. a plant emoji" style="max-width:160px;"/></div>
+          <div class="ap-editor-actions">
+            <button class="ap-save-btn" onclick="savePost()">Publish Post</button>
+            <button class="ap-discard-btn" onclick="showPage('posts',null)">Discard</button>
+          </div>
+          <div class="ap-success-toast" id="save-toast">Post published successfully!</div>
+        </div>
+      </div>
+      <div class="ap-page" id="page-settings">
+        <div class="ap-page-title">Settings</div>
+        <div class="ap-page-sub">Customize your blog and change your admin password.</div>
+        <div class="ap-settings">
+          <div class="ap-setting-group">
+            <h3>Blog Identity</h3>
+            <div class="ap-setting-row"><label class="ap-field-label">Blog Name</label><input class="ap-input" id="set-name" value="Mugisha Kilimo"/></div>
+            <div class="ap-setting-row"><label class="ap-field-label">Tagline</label><input class="ap-input" id="set-tagline" value="Where Farming Meets the Future"/></div>
+            <div class="ap-setting-row"><label class="ap-field-label">Author Name</label><input class="ap-input" id="set-author" value="Mugisha Kilimo"/></div>
+          </div>
+          <div class="ap-setting-group">
+            <h3>Change Password</h3>
+            <div class="ap-setting-row"><label class="ap-field-label">Current Password</label><input class="ap-input" type="password" id="set-oldpw" placeholder="Current password"/></div>
+            <div class="ap-setting-row"><label class="ap-field-label">New Password</label><input class="ap-input" type="password" id="set-newpw" placeholder="New password"/></div>
+            <div class="ap-setting-row"><label class="ap-field-label">Confirm New Password</label><input class="ap-input" type="password" id="set-confirmpw" placeholder="Confirm new password"/></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <button class="ap-save-btn" onclick="saveSettings()" style="max-width:200px;">Save Settings</button>
+            <button class="ap-discard-btn" onclick="resetAllData()" style="color:#ff6b6b;border-color:rgba(255,60,90,.3);">Reset All Data</button>
+          </div>
+          <div class="ap-success-toast" id="settings-toast">Settings saved!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <a href="#" class="nav-logo"><span class="dot"></span><span id="pub-blog-name">Mugisha Kilimo</span></a>
+  <ul class="nav-links">
+    <li><a href="#posts">Articles</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#newsletter">Newsletter</a></li>
+  </ul>
+  <div class="nav-right">
+    <button id="admin-entry-btn" onclick="openAdminModal()">Admin</button>
+    <button class="nav-cta" onclick="document.getElementById('newsletter').scrollIntoView({behavior:'smooth'})">Subscribe Free</button>
+  </div>
+</nav>
+
+<section class="hero" id="home">
+  <div class="hero-content">
+    <p class="hero-eyebrow">// Est. 2024 — AgriTech Insights Weekly</p>
+    <h1>Where <em>Farming</em><br>Meets the Future</h1>
+    <p class="hero-desc" id="pub-tagline">In-depth coverage of precision agriculture, agri-AI, drone technology, and the innovations feeding the world — delivered with clarity every week.</p>
+    <div class="hero-actions">
+      <a href="#posts" class="btn-primary">Read Latest Posts</a>
+      <a href="#newsletter" class="btn-ghost">Get Newsletter</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-card-stack">
+      <div class="hcard"><span class="hcard-tag">AGRI-AI</span><h3>AI Models That Predict Crop Yields</h3><p>How machine learning is giving farmers a 3-month head start on harvest planning and resource allocation.</p><div class="hcard-meta"><div class="avatar">M</div><span>Mugisha Kilimo - 7 min read</span></div></div>
+      <div class="hcard"><span class="hcard-tag">DRONES</span><h3>Drone Swarms for Pest Control</h3><p>Autonomous drone fleets are replacing chemical sprayers across East Africa maize farms.</p></div>
+      <div class="hcard"><span class="hcard-tag">SOIL SCIENCE</span><h3>Smart Sensors in the Ground</h3></div>
+    </div>
+  </div>
+</section>
+
+<div class="stats-strip">
+  <div class="stat"><div class="stat-num">8<span>K+</span></div><div class="stat-label">Monthly Readers</div></div>
+  <div class="stat"><div class="stat-num">2<span>K+</span></div><div class="stat-label">Subscribers</div></div>
+  <div class="stat"><div class="stat-num" id="pub-post-count">5<span>+</span></div><div class="stat-label">Articles Published</div></div>
+  <div class="stat"><div class="stat-num">5<span>*</span></div><div class="stat-label">Reader Rating</div></div>
+</div>
+
+<section id="posts">
+  <div class="section-header reveal">
+    <div><p class="section-label">// Featured Articles</p><h2 class="section-title">Latest from the Blog</h2></div>
+    <a href="#" class="section-link">View all articles</a>
+  </div>
+  <div class="posts-grid reveal" id="public-posts-grid"></div>
+</section>
+
+<section class="about-section" id="about">
+  <div class="about-inner">
+    <div class="about-photo-wrap reveal">
+      <div class="about-photo" style="font-size:5rem;">🌾</div>
+      <div class="about-badge"><strong>5+</strong><span>Years in AgriTech</span></div>
+    </div>
+    <div class="about-content reveal">
+      <p class="section-label">// About the Author</p>
+      <h2 class="section-title">Hi, I am <span id="pub-author-name">Mugisha Kilimo</span></h2>
+      <p>I am an agricultural technology journalist and researcher passionate about bridging the gap between farmers and the innovations that can transform their livelihoods. For over five years I have covered precision agriculture, smart irrigation, and agri-AI across Africa and beyond.</p>
+      <p>This blog breaks down complex agricultural technologies into practical insights — from soil sensors to satellite-guided tractors. Real science, real farms, real impact.</p>
+      <div class="about-tags">
+        <span class="about-tag">Precision Farming</span><span class="about-tag">Agri-AI</span>
+        <span class="about-tag">Drones and Robotics</span><span class="about-tag">Smart Irrigation</span>
+        <span class="about-tag">Soil Science</span><span class="about-tag">Climate Tech</span>
+      </div>
+      <a href="#newsletter" class="btn-primary">Follow My Work</a>
+    </div>
+  </div>
+</section>
+
+<section class="newsletter-section" id="newsletter">
+  <div class="newsletter-inner reveal">
+    <div>
+      <p class="newsletter-label">// Free Weekly Newsletter</p>
+      <h2 class="newsletter-title">Grow Smarter Every Week</h2>
+      <p class="newsletter-desc">Join 2,000+ farmers, agronomists, and agri-tech enthusiasts who read this blog every Thursday. The latest breakthroughs in agricultural technology explained simply.</p>
+      <div class="newsletter-perks">
+        <div class="perk"><span class="perk-dot"></span>Weekly AgriTech news and deep-dives</div>
+        <div class="perk"><span class="perk-dot"></span>Practical guides for modern farmers</div>
+        <div class="perk"><span class="perk-dot"></span>Early access to research and reports</div>
+        <div class="perk"><span class="perk-dot"></span>Cancel anytime, no questions asked</div>
+      </div>
+    </div>
+    <div>
+      <div class="form-card">
+        <label>First Name</label><input type="text" id="fname" placeholder="Your first name"/>
+        <label>Email Address</label><input type="email" id="femail" placeholder="you@example.com"/>
+        <button class="form-submit" onclick="handleSubscribe()">Get Free Access</button>
+        <p class="form-note">No spam, ever. Unsubscribe in one click.</p>
+        <div class="success-msg" id="success-msg">Welcome aboard! Check your inbox to confirm.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <a href="#" class="footer-logo"><span style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:6px;"></span><span id="pub-footer-name">Mugisha Kilimo</span></a>
+  <div class="footer-links">
+    <a href="#posts">Articles</a><a href="#about">About</a>
+    <a href="#newsletter">Newsletter</a><a href="#">Privacy</a>
+  </div>
+  <span class="footer-copy">2025 <span id="pub-footer-copy">Mugisha Kilimo</span>. All rights reserved.</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── SUPABASE CONFIG ──────────────────────────────────
+var SUPABASE_URL = 'https://prqhezxmstmjopsfrafz.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBycWhlenhtc3Rtam9wc2ZyYWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODYwMjAsImV4cCI6MjA4OTQ2MjAyMH0.4dsnX6OufC6S56ZlB5PrWxGSe34pKPKaATMbSPLzY3c';
+var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var GRADIENTS = [
+  'linear-gradient(135deg,#0d1f0a 0%,#1a4a10 50%,#2d8a20 100%)',
+  'linear-gradient(135deg,#1a2a0a 0%,#4a6a10 50%,#8aaa20 100%)',
+  'linear-gradient(135deg,#0a1a10 0%,#105a30 50%,#20aa60 100%)',
+  'linear-gradient(135deg,#1a1a0a 0%,#5a5a10 50%,#aaaa20 100%)',
+  'linear-gradient(135deg,#1a0a0a 0%,#6a3010 50%,#cc7020 100%)',
+  'linear-gradient(135deg,#0a1a1a 0%,#106a5a 50%,#20aaaa 100%)',
+];
+var TAG_STYLES = {
+  'PRECISION FARMING':'','DRONES':'orange','SOIL SCIENCE':'',
+  'IRRIGATION':'blue','AGRI-AI':'','FOOD TECH':'orange','CLIMATE':'blue','OTHER':''
+};
+
+var ADMIN_PASSWORD = 'mugisha2024';
+var editingId = null;
+var settings = { name:'Mugisha Kilimo', tagline:'Where Farming Meets the Future', author:'Mugisha Kilimo' };
+var posts = [];
+
+// ── LOADING INDICATOR ────────────────────────────────
+function showLoading(msg){
+  document.getElementById('public-posts-grid').innerHTML =
+    '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--ink-muted);">'+
+    '<div style="font-size:2rem;margin-bottom:12px;">🌱</div><div>'+(msg||'Loading...')+'</div></div>';
+}
+
+// ── LOAD DATA FROM SUPABASE ──────────────────────────
+async function loadData(){
+  showLoading('Loading posts from database...');
+  try {
+    // Load settings
+    var sr = await db.from('settings').select('*').eq('id',1).single();
+    if(sr.data){
+      settings = {
+        name: sr.data.name || 'Mugisha Kilimo',
+        tagline: sr.data.tagline || 'Where Farming Meets the Future',
+        author: sr.data.author || 'Mugisha Kilimo'
+      };
+      if(sr.data.password) ADMIN_PASSWORD = sr.data.password;
+    }
+    // Load posts
+    var pr = await db.from('posts').select('*').order('created_at', {ascending:false});
+    if(pr.data) posts = pr.data;
+    else posts = [];
+  } catch(e){
+    console.warn('DB load error:', e);
+    posts = [];
+  }
+  applySettings();
+  renderPublicPosts();
+}
+
+// ── SAVE SETTINGS TO SUPABASE ────────────────────────
+async function saveSettingsToDB(){
+  await db.from('settings').upsert({
+    id:1, name:settings.name, tagline:settings.tagline,
+    author:settings.author, password:ADMIN_PASSWORD
+  });
+}
+
+// ── ADMIN AUTH ───────────────────────────────────────
+function openAdminModal(){
+  document.getElementById('admin-modal').classList.add('open');
+  document.getElementById('alb-pw').value='';
+  document.getElementById('alb-error').style.display='none';
+  setTimeout(function(){document.getElementById('alb-pw').focus();},100);
+}
+function closeAdminModal(){ document.getElementById('admin-modal').classList.remove('open'); }
+function adminLogin(){
+  if(document.getElementById('alb-pw').value===ADMIN_PASSWORD){
+    closeAdminModal(); openAdmin();
+  } else {
+    document.getElementById('alb-error').style.display='block';
+    document.getElementById('alb-pw').value='';
+    document.getElementById('alb-pw').focus();
+  }
+}
+function openAdmin(){
+  document.getElementById('admin-panel').classList.add('open');
+  document.body.style.overflow='hidden';
+  refreshDashboard(); refreshPostsList();
+}
+function closeAdmin(){
+  document.getElementById('admin-panel').classList.remove('open');
+  document.body.style.overflow=''; renderPublicPosts();
+}
+function logoutAdmin(){ closeAdmin(); }
+
+// ── ADMIN PAGES ──────────────────────────────────────
+function showPage(name,el){
+  document.querySelectorAll('.ap-page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.ap-sidebar-item').forEach(function(i){i.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+}
+function refreshDashboard(){
+  document.getElementById('stat-posts').textContent=posts.length;
+  var r=document.getElementById('dash-recent-posts');
+  var recent=posts.slice(0,3);
+  r.innerHTML=recent.length?recent.map(function(p){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><div><div style="color:#fff;font-size:.85rem;font-weight:500;">'+p.title+'</div><div style="color:#3a5a34;font-size:.72rem;margin-top:3px;">'+p.tag+' - '+p.date+' - '+p.time+' min</div></div><div style="font-family:monospace;font-size:.65rem;background:rgba(30,126,52,.2);color:#4caf50;padding:3px 8px;border-radius:4px;flex-shrink:0;">'+p.tag+'</div></div>';
+  }).join(''):'<div style="color:#3a5a34;font-size:.85rem;">No posts yet.</div>';
+}
+function refreshPostsList(){
+  var list=document.getElementById('all-posts-list');
+  list.innerHTML=posts.length?posts.map(function(p){
+    return '<div class="ap-post-row"><div style="font-size:1.6rem;flex-shrink:0;">'+(p.icon||'🌾')+'</div><div class="ap-post-row-info"><div class="ap-post-row-title">'+p.title+'</div><div class="ap-post-row-meta"><span class="ap-post-row-tag">'+p.tag+'</span><span>'+(p.date||'')+'</span><span>'+p.time+' min read</span></div></div><div class="ap-post-actions"><button class="ap-icon-btn" onclick="editPost('+p.id+')">Edit</button><button class="ap-icon-btn del" onclick="deletePost('+p.id+')">Delete</button></div></div>';
+  }).join(''):'<div style="color:#3a5a34;text-align:center;padding:40px;">No posts yet. Create your first post!</div>';
+}
+
+// ── EDITOR ───────────────────────────────────────────
+function resetEditor(){
+  editingId=null;
+  document.getElementById('editor-title').textContent='New Post';
+  document.getElementById('editor-sub').textContent='Write and publish a new article.';
+  ['inp-title','inp-excerpt','inp-content','inp-icon'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('inp-tag').value='PRECISION FARMING';
+  document.getElementById('inp-time').value='';
+  document.getElementById('save-toast').style.display='none';
+}
+function editPost(id){
+  var p=posts.find(function(x){return x.id===id;}); if(!p) return;
+  editingId=id;
+  document.getElementById('editor-title').textContent='Edit Post';
+  document.getElementById('editor-sub').textContent='Update your article below.';
+  document.getElementById('inp-title').value=p.title;
+  document.getElementById('inp-tag').value=p.tag;
+  document.getElementById('inp-time').value=p.time;
+  document.getElementById('inp-excerpt').value=p.excerpt||'';
+  document.getElementById('inp-content').value=p.content||'';
+  document.getElementById('inp-icon').value=p.icon||'';
+  document.getElementById('save-toast').style.display='none';
+  showPage('new-post',null);
+}
+
+async function savePost(){
+  var title=document.getElementById('inp-title').value.trim();
+  var excerpt=document.getElementById('inp-excerpt').value.trim();
+  if(!title){alert('Please enter a post title.');return;}
+  if(!excerpt){alert('Please enter an excerpt.');return;}
+  var tag=document.getElementById('inp-tag').value;
+  var time=parseInt(document.getElementById('inp-time').value)||5;
+  var content=document.getElementById('inp-content').value.trim();
+  var icon=document.getElementById('inp-icon').value.trim()||'🌾';
+  var dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('save-toast').textContent='Saving...';
+  document.getElementById('save-toast').style.display='block';
+  try {
+    if(editingId){
+      await db.from('posts').update({title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon}).eq('id',editingId);
+      var idx=posts.findIndex(function(p){return p.id===editingId;});
+      if(idx>-1) posts[idx]=Object.assign({},posts[idx],{title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon});
+      editingId=null;
+    } else {
+      var hasFeatured=posts.some(function(p){return p.featured;});
+      var newPost={title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon,date:dateStr,featured:!hasFeatured};
+      var res=await db.from('posts').insert(newPost).select().single();
+      if(res.data) posts.unshift(res.data);
+    }
+    document.getElementById('save-toast').textContent='Post published successfully!';
+    setTimeout(function(){document.getElementById('save-toast').style.display='none';},3000);
+    refreshDashboard(); refreshPostsList(); renderPublicPosts();
+  } catch(e){
+    document.getElementById('save-toast').textContent='Error saving. Please try again.';
+    console.error(e);
+  }
+}
+
+async function deletePost(id){
+  if(!confirm('Delete this post? This cannot be undone.')) return;
+  await db.from('posts').delete().eq('id',id);
+  posts=posts.filter(function(p){return p.id!==id;});
+  if(posts.length>0&&!posts.find(function(p){return p.featured;})){
+    posts[0].featured=true;
+    await db.from('posts').update({featured:true}).eq('id',posts[0].id);
+  }
+  refreshDashboard(); refreshPostsList(); renderPublicPosts();
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+async function saveSettings(){
+  var name=document.getElementById('set-name').value.trim();
+  var tagline=document.getElementById('set-tagline').value.trim();
+  var author=document.getElementById('set-author').value.trim();
+  var oldpw=document.getElementById('set-oldpw').value;
+  var newpw=document.getElementById('set-newpw').value;
+  var confirmpw=document.getElementById('set-confirmpw').value;
+  if(oldpw||newpw||confirmpw){
+    if(oldpw!==ADMIN_PASSWORD){alert('Current password is incorrect.');return;}
+    if(newpw!==confirmpw){alert('New passwords do not match.');return;}
+    if(newpw.length<4){alert('Password must be at least 4 characters.');return;}
+    ADMIN_PASSWORD=newpw;
+    ['set-oldpw','set-newpw','set-confirmpw'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  settings={name:name||settings.name,tagline:tagline||settings.tagline,author:author||settings.author};
+  await saveSettingsToDB();
+  applySettings();
+  document.getElementById('settings-toast').style.display='block';
+  setTimeout(function(){document.getElementById('settings-toast').style.display='none';},3000);
+}
+function applySettings(){
+  document.getElementById('pub-blog-name').textContent=settings.name;
+  document.getElementById('pub-tagline').textContent=settings.tagline;
+  document.getElementById('pub-author-name').textContent=settings.author;
+  document.getElementById('pub-footer-name').textContent=settings.name;
+  document.getElementById('pub-footer-copy').textContent=settings.name;
+  document.getElementById('set-name').value=settings.name;
+  document.getElementById('set-tagline').value=settings.tagline;
+  document.getElementById('set-author').value=settings.author;
+  document.title=settings.name+' - Agricultural Technology Blog';
+}
+
+async function resetAllData(){
+  if(!confirm('This will delete ALL your posts and reset settings. Are you sure?')) return;
+  await db.from('posts').delete().neq('id',0);
+  await db.from('settings').upsert({id:1,name:'Mugisha Kilimo',tagline:'Where Farming Meets the Future',author:'Mugisha Kilimo',password:'mugisha2024'});
+  ADMIN_PASSWORD='mugisha2024';
+  settings={name:'Mugisha Kilimo',tagline:'Where Farming Meets the Future',author:'Mugisha Kilimo'};
+  posts=[];
+  refreshDashboard(); refreshPostsList(); renderPublicPosts(); applySettings();
+  alert('Blog reset to defaults.');
+}
+
+// ── ARTICLE MODAL ─────────────────────────────────────
+function openArticle(id){
+  var p=posts.find(function(x){return x.id===id;}); if(!p) return;
+  var grad=GRADIENTS[posts.indexOf(p)%GRADIENTS.length];
+  document.getElementById('am-hero').style.background=grad;
+  document.getElementById('am-icon').textContent=p.icon||'🌾';
+  document.getElementById('am-tag').textContent=p.tag;
+  document.getElementById('am-title').textContent=p.title;
+  var init=(settings.author||'M')[0].toUpperCase();
+  document.getElementById('am-avatar').textContent=init;
+  document.getElementById('am-author').textContent=settings.author;
+  document.getElementById('am-date').textContent=p.date||'';
+  document.getElementById('am-read-time').textContent=(p.time||5)+' min read';
+  var content=p.content&&p.content.trim()?p.content:p.excerpt||'No content yet.';
+  document.getElementById('am-content').textContent=content;
+  document.getElementById('article-modal').classList.add('open');
+  document.body.style.overflow='hidden';
+  document.getElementById('article-modal').scrollTop=0;
+}
+function closeArticle(){
+  document.getElementById('article-modal').classList.remove('open');
+  document.body.style.overflow='';
+}
+// Close on backdrop click
+document.getElementById('article-modal').addEventListener('click',function(e){
+  if(e.target===this) closeArticle();
+});
+
+// ── PUBLIC RENDER ─────────────────────────────────────
+function renderPublicPosts(){
+  var grid=document.getElementById('public-posts-grid');
+  document.getElementById('pub-post-count').innerHTML=posts.length+'<span>+</span>';
+  if(!posts.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--ink-muted);"><div style="font-size:2rem;margin-bottom:12px;">🌱</div><div>No posts yet. Log in as admin to write your first article!</div></div>';
+    return;
+  }
+  var featured=posts.find(function(p){return p.featured;})||posts[0];
+  var rest=posts.filter(function(p){return p.id!==featured.id;}).slice(0,4);
+  var init=(settings.author||'M')[0].toUpperCase();
+  function tagCls(t){return TAG_STYLES[t]||'';}
+  function grad(p){return GRADIENTS[posts.indexOf(p)%GRADIENTS.length];}
+  var html='<div class="post-card featured" onclick="openArticle('+(featured.id)+')"><div class="post-img" style="background:'+grad(featured)+';"><span class="post-img-icon">'+(featured.icon||'🌾')+'</span></div><div class="post-body"><span class="post-tag '+tagCls(featured.tag)+'">'+featured.tag+'</span><h2 class="post-title">'+featured.title+'</h2><p class="post-excerpt">'+featured.excerpt+'</p><div class="post-footer"><div class="post-author"><div class="avatar" style="background:var(--accent);">'+init+'</div><div><div class="author-name">'+settings.author+'</div><div class="post-date">'+(featured.date||'')+'</div></div></div><span class="read-time">'+featured.time+' min read</span></div></div></div>';
+  rest.forEach(function(p){html+='<div class="post-card" onclick="openArticle('+(p.id)+')"><div class="post-img" style="background:'+grad(p)+';"><span class="post-img-icon">'+(p.icon||'🌾')+'</span></div><div class="post-body"><span class="post-tag '+tagCls(p.tag)+'">'+p.tag+'</span><h3 class="post-title">'+p.title+'</h3><p class="post-excerpt">'+p.excerpt+'</p><div class="post-footer"><div class="post-author"><div class="avatar" style="background:var(--accent);">'+init+'</div><div><div class="author-name">'+settings.author+'</div><div class="post-date">'+(p.date||'')+'</div></div></div><span class="read-time">'+p.time+' min</span></div></div></div>';});
+  grid.innerHTML=html;
+}
+
+// ── INIT ──────────────────────────────────────────────
+loadData();
+document.querySelectorAll('.reveal').forEach(function(el){
+  new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1}).observe(el);
+});
+function handleSubscribe(){
+  var name=document.getElementById('fname').value.trim();
+  var email=document.getElementById('femail').value.trim();
+  if(!name||!email||!email.includes('@')){alert('Please enter your name and a valid email.');return;}
+  document.getElementById('success-msg').style.display='block';
+  document.getElementById('fname').value=''; document.getElementById('femail').value='';
+}
+document.querySelectorAll('a[href^="#"]').forEach(function(a){
+  a.addEventListener('click',function(e){var t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}});
+});
+</script>
+</body>
+</html>
