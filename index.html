@@ -82,6 +82,22 @@
     .ap-save-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(30,126,52,.4); }
     .ap-discard-btn { background:transparent; color:#7a9470; border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:12px 22px; font-size:0.9rem; font-family:'DM Sans',sans-serif; cursor:pointer; }
     .ap-success-toast { display:none; background:rgba(30,126,52,0.15); border:1px solid rgba(30,126,52,0.3); border-radius:8px; padding:10px 16px; font-size:0.82rem; color:#4caf50; margin-top:12px; }
+    .media-upload-zone { border:2px dashed rgba(255,255,255,0.15); border-radius:12px; padding:24px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; position:relative; overflow:hidden; }
+    .media-upload-zone:hover { border-color:#1e7e34; background:rgba(30,126,52,0.08); }
+    .media-upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .media-upload-zone .uz-icon { font-size:2rem; margin-bottom:8px; }
+    .media-upload-zone .uz-text { font-size:0.85rem; color:#7a9470; }
+    .media-upload-zone .uz-hint { font-size:0.72rem; color:#3a5a34; margin-top:4px; }
+    .media-preview { margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; }
+    .media-thumb { position:relative; width:80px; height:80px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); }
+    .media-thumb img,.media-thumb video { width:100%; height:100%; object-fit:cover; }
+    .media-thumb .rm-btn { position:absolute; top:3px; right:3px; background:rgba(0,0,0,0.7); color:#fff; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer; }
+    .upload-progress { display:none; background:rgba(30,126,52,0.1); border-radius:8px; padding:10px 14px; font-size:0.8rem; color:#4caf50; margin-top:8px; }
+    .am-media-gallery { margin-top:20px; display:flex; flex-direction:column; gap:12px; }
+    .am-media-gallery img { width:100%; border-radius:12px; max-height:480px; object-fit:cover; }
+    .am-media-gallery video { width:100%; border-radius:12px; max-height:400px; background:#000; }
+    .post-img { position:relative; }
+    .post-img-cover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .ap-settings { display:flex; flex-direction:column; gap:20px; max-width:560px; }
     .ap-setting-group { background:#0f1e0c; border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:24px; }
     .ap-setting-group h3 { font-size:0.95rem; color:#fff; margin-bottom:16px; font-weight:600; }
@@ -258,6 +274,7 @@
         </div>
         <span class="am-read-time" id="am-read-time"></span>
       </div>
+      <div class="am-media-gallery" id="am-media-gallery" style="display:none;"></div>
       <div class="am-content" id="am-content"></div>
     </div>
   </div>
@@ -334,6 +351,20 @@
           </div>
           <div><label class="ap-field-label">Excerpt</label><input class="ap-input" id="inp-excerpt" placeholder="Short description shown on blog cards"/></div>
           <div><label class="ap-field-label">Full Content</label><textarea class="ap-textarea" id="inp-content" placeholder="Write your full article here"></textarea></div>
+
+          <div>
+            <label class="ap-field-label">Cover Image / Video</label>
+            <div class="media-upload-zone" id="media-zone">
+              <input type="file" id="inp-media" accept="image/*,video/*" onchange="previewMedia(this)"/>
+              <div class="uz-icon">📎</div>
+              <div class="uz-text">Tap to upload photo or video</div>
+              <div class="uz-hint">JPG, PNG, GIF, MP4, MOV supported</div>
+            </div>
+            <div class="upload-progress" id="upload-progress">Uploading media...</div>
+            <div class="media-preview" id="media-preview-area"></div>
+            <input type="hidden" id="inp-media-url" value=""/>
+            <input type="hidden" id="inp-media-type" value=""/>
+          </div>
           <div><label class="ap-field-label">Icon (emoji)</label><input class="ap-input" id="inp-icon" placeholder="e.g. a plant emoji" style="max-width:160px;"/></div>
           <div class="ap-editor-actions">
             <button class="ap-save-btn" onclick="savePost()">Publish Post</button>
@@ -592,7 +623,8 @@ function resetEditor(){
   editingId=null;
   document.getElementById('editor-title').textContent='New Post';
   document.getElementById('editor-sub').textContent='Write and publish a new article.';
-  ['inp-title','inp-excerpt','inp-content','inp-icon'].forEach(function(id){document.getElementById(id).value='';});
+  ['inp-title','inp-excerpt','inp-content','inp-icon','inp-media-url','inp-media-type'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('media-preview-area').innerHTML='';
   document.getElementById('inp-tag').value='PRECISION FARMING';
   document.getElementById('inp-time').value='';
   document.getElementById('save-toast').style.display='none';
@@ -608,6 +640,9 @@ function editPost(id){
   document.getElementById('inp-excerpt').value=p.excerpt||'';
   document.getElementById('inp-content').value=p.content||'';
   document.getElementById('inp-icon').value=p.icon||'';
+  document.getElementById('inp-media-url').value=p.media_url||'';
+  document.getElementById('inp-media-type').value=p.media_type||'';
+  document.getElementById('media-preview-area').innerHTML=p.media_url?(p.media_type==='video'?'<div class="media-thumb"><video src="'+p.media_url+'" muted></video></div>':'<div class="media-thumb"><img src="'+p.media_url+'"/></div>'):''; 
   document.getElementById('save-toast').style.display='none';
   showPage('new-post',null);
 }
@@ -621,18 +656,28 @@ async function savePost(){
   var time=parseInt(document.getElementById('inp-time').value)||5;
   var content=document.getElementById('inp-content').value.trim();
   var icon=document.getElementById('inp-icon').value.trim()||'🌾';
+  var mediaUrl=document.getElementById('inp-media-url').value.trim();
+  var mediaType=document.getElementById('inp-media-type').value.trim();
   var dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   document.getElementById('save-toast').textContent='Saving...';
   document.getElementById('save-toast').style.display='block';
   try {
+    // Upload media if a new file was selected
+    var inp=document.getElementById('inp-media');
+    if(inp.files&&inp.files[0]){
+      var uploaded=await uploadMediaFile();
+      if(uploaded){mediaUrl=uploaded.url;mediaType=uploaded.type;}
+    }
     if(editingId){
-      await db.from('posts').update({title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon}).eq('id',editingId);
+      var upd={title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon};
+      if(mediaUrl){upd.media_url=mediaUrl;upd.media_type=mediaType;}
+      await db.from('posts').update(upd).eq('id',editingId);
       var idx=posts.findIndex(function(p){return p.id===editingId;});
-      if(idx>-1) posts[idx]=Object.assign({},posts[idx],{title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon});
+      if(idx>-1) posts[idx]=Object.assign({},posts[idx],{title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon,media_url:mediaUrl||posts[idx].media_url,media_type:mediaType||posts[idx].media_type});
       editingId=null;
     } else {
       var hasFeatured=posts.some(function(p){return p.featured;});
-      var newPost={title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon,date:dateStr,featured:!hasFeatured};
+      var newPost={title:title,tag:tag,time:time,excerpt:excerpt,content:content,icon:icon,date:dateStr,featured:!hasFeatured,media_url:mediaUrl||null,media_type:mediaType||null};
       var res=await db.from('posts').insert(newPost).select().single();
       if(res.data) posts.unshift(res.data);
     }
@@ -715,6 +760,18 @@ function openArticle(id){
   document.getElementById('am-read-time').textContent=(p.time||5)+' min read';
   var content=p.content&&p.content.trim()?p.content:p.excerpt||'No content yet.';
   document.getElementById('am-content').textContent=content;
+  // Show media
+  var gallery=document.getElementById('am-media-gallery');
+  if(p.media_url){
+    if(p.media_type==='video'){
+      gallery.innerHTML='<video src="'+p.media_url+'" controls playsinline style="width:100%;border-radius:12px;max-height:400px;background:#000;"></video>';
+    } else {
+      gallery.innerHTML='<img src="'+p.media_url+'" style="width:100%;border-radius:12px;max-height:480px;object-fit:cover;" loading="lazy"/>';
+    }
+    gallery.style.display='block';
+  } else {
+    gallery.innerHTML=''; gallery.style.display='none';
+  }
   document.getElementById('article-modal').classList.add('open');
   document.body.style.overflow='hidden';
   document.getElementById('article-modal').scrollTop=0;
@@ -741,9 +798,55 @@ function renderPublicPosts(){
   var init=(settings.author||'M')[0].toUpperCase();
   function tagCls(t){return TAG_STYLES[t]||'';}
   function grad(p){return GRADIENTS[posts.indexOf(p)%GRADIENTS.length];}
-  var html='<div class="post-card featured" onclick="openArticle('+(featured.id)+')"><div class="post-img" style="background:'+grad(featured)+';"><span class="post-img-icon">'+(featured.icon||'🌾')+'</span></div><div class="post-body"><span class="post-tag '+tagCls(featured.tag)+'">'+featured.tag+'</span><h2 class="post-title">'+featured.title+'</h2><p class="post-excerpt">'+featured.excerpt+'</p><div class="post-footer"><div class="post-author"><div class="avatar" style="background:var(--accent);">'+init+'</div><div><div class="author-name">'+settings.author+'</div><div class="post-date">'+(featured.date||'')+'</div></div></div><span class="read-time">'+featured.time+' min read</span></div></div></div>';
-  rest.forEach(function(p){html+='<div class="post-card" onclick="openArticle('+(p.id)+')"><div class="post-img" style="background:'+grad(p)+';"><span class="post-img-icon">'+(p.icon||'🌾')+'</span></div><div class="post-body"><span class="post-tag '+tagCls(p.tag)+'">'+p.tag+'</span><h3 class="post-title">'+p.title+'</h3><p class="post-excerpt">'+p.excerpt+'</p><div class="post-footer"><div class="post-author"><div class="avatar" style="background:var(--accent);">'+init+'</div><div><div class="author-name">'+settings.author+'</div><div class="post-date">'+(p.date||'')+'</div></div></div><span class="read-time">'+p.time+' min</span></div></div></div>';});
+  var html='<div class="post-card featured" onclick="openArticle('+(featured.id)+')"><div class="post-img" style="background:'+grad(featured)+';">'+(featured.media_url&&featured.media_type!=='video'?'<img class="post-img-cover" src="'+featured.media_url+'" loading="lazy"/>':'')+' <span class="post-img-icon" style="'+(featured.media_url&&featured.media_type!=='video'?'display:none':'')+'"> '+(featured.icon||'🌾')+'</span></div><div class="post-body"><span class="post-tag '+tagCls(featured.tag)+'">'+featured.tag+'</span><h2 class="post-title">'+featured.title+'</h2><p class="post-excerpt">'+featured.excerpt+'</p><div class="post-footer"><div class="post-author"><div class="avatar" style="background:var(--accent);">'+init+'</div><div><div class="author-name">'+settings.author+'</div><div class="post-date">'+(featured.date||'')+'</div></div></div><span class="read-time">'+featured.time+' min read</span></div></div></div>';
+  rest.forEach(function(p){html+='<div class="post-card" onclick="openArticle('+(p.id)+')"><div class="post-img" style="background:'+grad(p)+';">'+(p.media_url&&p.media_type!=='video'?'<img class="post-img-cover" src="'+p.media_url+'" loading="lazy"/>':'')+' <span class="post-img-icon" style="'+(p.media_url&&p.media_type!=='video'?'display:none':'')+'"> '+(p.icon||'🌾')+'</span></div><div class="post-body"><span class="post-tag '+tagCls(p.tag)+'">'+p.tag+'</span><h3 class="post-title">'+p.title+'</h3><p class="post-excerpt">'+p.excerpt+'</p><div class="post-footer"><div class="post-author"><div class="avatar" style="background:var(--accent);">'+init+'</div><div><div class="author-name">'+settings.author+'</div><div class="post-date">'+(p.date||'')+'</div></div></div><span class="read-time">'+p.time+' min</span></div></div></div>';});
   grid.innerHTML=html;
+}
+
+
+// ── MEDIA UPLOAD ──────────────────────────────────────
+function previewMedia(input){
+  var file=input.files[0]; if(!file) return;
+  var isVideo=file.type.startsWith('video/');
+  var preview=document.getElementById('media-preview-area');
+  var reader=new FileReader();
+  reader.onload=function(e){
+    if(isVideo){
+      preview.innerHTML='<div class="media-thumb"><video src="'+e.target.result+'" muted></video><button class="rm-btn" onclick="clearMedia()">×</button></div>';
+    } else {
+      preview.innerHTML='<div class="media-thumb"><img src="'+e.target.result+'"/><button class="rm-btn" onclick="clearMedia()">×</button></div>';
+    }
+  };
+  reader.readAsDataURL(file);
+  // store for upload
+  document.getElementById('media-zone').dataset.file='pending';
+}
+function clearMedia(){
+  document.getElementById('inp-media-url').value='';
+  document.getElementById('inp-media-type').value='';
+  document.getElementById('media-preview-area').innerHTML='';
+  document.getElementById('inp-media').value='';
+}
+async function uploadMediaFile(){
+  var input=document.getElementById('inp-media');
+  var file=input.files[0]; if(!file) return null;
+  var isVideo=file.type.startsWith('video/');
+  var bucket=isVideo?'videos':'images';
+  var ext=file.name.split('.').pop();
+  var path='post-'+Date.now()+'.'+ext;
+  document.getElementById('upload-progress').style.display='block';
+  document.getElementById('upload-progress').textContent='Uploading '+(isVideo?'video':'image')+'...';
+  try {
+    var res=await db.storage.from(bucket).upload(path,file,{cacheControl:'3600',upsert:false});
+    if(res.error) throw res.error;
+    var pub=db.storage.from(bucket).getPublicUrl(path);
+    document.getElementById('upload-progress').style.display='none';
+    return {url:pub.data.publicUrl, type:isVideo?'video':'image'};
+  } catch(e){
+    document.getElementById('upload-progress').textContent='Upload failed: '+e.message;
+    console.error(e);
+    return null;
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────
